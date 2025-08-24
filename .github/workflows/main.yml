@@ -17,7 +17,7 @@ on:
         type: string
 
 permissions:
-         contents:write
+  contents: write   # 👈 Needed for creating releases and uploading assets
 
 jobs:
   upload_asset:

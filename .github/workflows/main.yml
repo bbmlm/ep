@@ -1,42 +1,45 @@
-name: Upload Release Asset
+name: Upload Asset to Release
 
 on:
   workflow_dispatch:
     inputs:
       file_url:
+        description: 'URL of the file to upload'
         required: true
-        description: "Direct file URL"
-      release_tag:
-        required: true
-        description: "Release tag"
       file_name:
+        description: 'File name for the uploaded asset'
         required: true
-        description: "Asset file name"
+      release_tag:
+        description: 'Tag for the GitHub release'
+        required: true
 
 jobs:
   upload_asset:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download file from URL
-      run: |
-        curl -L "${{ github.event.inputs.file_url }}" -o "${{ github.event.inputs.file_name }}"
-        ls -lh "${{ github.event.inputs.file_name }}"
+      - name: Download file from URL
+        run: |
+          echo "Downloading: ${{ github.event.inputs.file_url }}"
+          curl -L "${{ github.event.inputs.file_url }}" -o "${{ github.event.inputs.file_name }}"
+          ls -lh "${{ github.event.inputs.file_name }}"
 
-    - name: Create or update GitHub release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.event.inputs.release_tag }}
-        name: Release ${{ github.event.inputs.release_tag }}
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub release (if not exists)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: Release ${{ github.event.inputs.release_tag }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload asset to GitHub release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ github.event.inputs.release_tag }}
-        files: ${{ github.event.inputs.file_name }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload asset to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          files: ${{ github.event.inputs.file_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Emit direct asset URL for worker
+        run: echo "[asset] https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.release_tag }}/${{ github.event.inputs.file_name }}"
